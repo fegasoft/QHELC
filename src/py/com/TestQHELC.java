@@ -35,31 +35,29 @@ public class TestQHELC {
 					System.out.println(listado[i]);
 					String ruta = sCarpAct.concat("\\").concat(listado[i]);
 					System.out.println(ruta);
-					ImagePlus im = IJ.openImage(ruta); // carga la imagen
-
-					im.show(); // Muestra la imagen original
+					
+					ImagePlus im = IJ.openImage(ruta);
+					im.show(); 								// show the original image
 					
 					ImagePlus im2 = im.duplicate();
 
-					// Inicio del algoritmo
 					long time_start = System.currentTimeMillis();
 
-					// Agregar el algoritmo de QHELC
 					QHELC qhelc = new QHELC();
 					ImageProcessor ip = im2.getProcessor();
 					qhelc.run(ip);
-
-					showHistograms(im.getProcessor(), ruta, qhelc);
 					
-					// Fin del tiempo en milisegundos
+					//showHistograms(im.getProcessor(), ruta, qhelc);
+					
 					long time_end = System.currentTimeMillis();
 					long time = time_end - time_start;
-					//System.out.println(time);
+					
+					System.out.print("execution time = ");
+					System.out.println(time);
 														
-					//im2.show();	// Muestra la imagen mejorada
-
-					// Guardar los resultados
-					String rGuardar = System.getProperty("user.dir").concat("\\resultados\\QHELC\\").concat(listado[i]);
+					im2.show();								// show the enhanced image
+					
+					String rGuardar = sCarpAct.concat("\\resultados\\").concat("QHELC");
 					System.out.println(rGuardar);
 					IJ.saveAs(im2, "tif", rGuardar);
 					
@@ -69,134 +67,91 @@ public class TestQHELC {
 				catch (Exception e) {
 					System.out.println(e);
 				}
-
 		}
-
 	}
 	
 	private static void showHistograms(ImageProcessor ip, String imTitle, QHELC q) {
-				
+								
+		final int w_histogram_window = q.K;
+		final int h_histogram_window = 100;
 		
-		int [] histogram_ac = new int[q.LEVELS];
-		histogram_ac = q.getACHistogram(ip);
-		int max_histogram_ac = q.getMaxHistogram(histogram_ac);
-				
-		final int w_histogram = q.LEVELS;
-		final int h_histogram = 100;
+		// show the histogram
 
-		float factor_escala = (float)(h_histogram) / (float)(q.getMaxHistogram(q.histo));
+		float scale_factor_h = (float)(h_histogram_window) / (float)(q.getMaxHistogram());
 		
-		System.out.print("SPL = ");
-		System.out.print(q.SPL);
-		System.out.print(", SP = ");
-		System.out.print(q.SP);
-		System.out.print(", SPU = ");
-		System.out.print(q.SPU);
-
-//		System.out.print(", IL1 = ");
-//		System.out.print(q.IL1);
-//		System.out.print(", IL2 = ");
-//		System.out.print(q.IL2);
-//		System.out.print(", IU1 = ");
-//		System.out.print(q.IU1);
-//		System.out.print(", IU2 = ");
-//		System.out.print(q.IU2);
-//
-//		System.out.print(", NL1 = ");
-//		System.out.print(q.NL1);
-//		System.out.print(", NL2 = ");
-//		System.out.print(q.NL2);
-//		System.out.print(", NU1 = ");
-//		System.out.print(q.NU1);
-//		System.out.print(", NU2 = ");
-//		System.out.print(q.NU2);
-
-		System.out.print(", CLL1 = ");
-		System.out.print(q.CLL1 * factor_escala);
-		System.out.print(", CLL2 = ");
-		System.out.print(q.CLL2 * factor_escala);
-		System.out.print(", CLU1 = ");
-		System.out.print(q.CLU1 * factor_escala);
-		System.out.print(", CLU2 = ");
-		System.out.println(q.CLU2 * factor_escala);
-		
-		//q.HE(histogram_ac, ip);
-		q.HE2(q.histo, ip);
-		//ImagePlus hi_ec = new ImagePlus("Ecualizado " + imTitle, ip);
-		//hi_ec.show();
+		ImageProcessor h_ip = new ByteProcessor(w_histogram_window, h_histogram_window);
+		h_ip.setValue(255);
+		h_ip.fill();
 				
-		// muestra el histograma
-		
-		ImageProcessor hip = new ByteProcessor(w_histogram, h_histogram);
-		hip.setValue(255);
-		hip.fill();
+		for (int x = 0; x < w_histogram_window; ++x) {
+			
+			for (int y = 0; y < (int)((float)(q.histogram[x]) * scale_factor_h); ++y) {
 				
-		for (int x = 0; x < w_histogram; ++x) {
+				h_ip.putPixel(x, h_histogram_window - y, 0);
+								
+//				if (y == (int)((float)(q.CLL1) * scale_factor_h))
+//					for (int xx = 0; xx <= q.SPL; xx++)
+//						h_ip.putPixel(xx, y, 0);
+//				
+//				if (y == (int)((float)(q.CLL2) * scale_factor_h))
+//					for (int xx = q.SPL + 1; xx <= q.SP; xx++)
+//						h_ip.putPixel(xx, y, 0);
+//				
+//				if (y == (int)((float)(q.CLU1) * scale_factor_h))
+//					for (int xx = q.SP + 1; xx <= q.SPU; xx++)
+//						h_ip.putPixel(xx, y, 0);
+//				
+//				if (y == (int)((float)(q.CLU2) * scale_factor_h))
+//					for (int xx = q.SPU + 1; xx <= q.K - 1; xx++)
+//						h_ip.putPixel(xx, y, 0);
 
-			for (int y = 0; y < q.histo[x] * factor_escala; ++y) {
-				
-				hip.putPixel(x, h_histogram - y, 0);
-				/*
-				if (y >= q.CLL1 * factor_escala)
-					for (int xx = 0; xx <= q.SPL; xx++)
-						hip.putPixel(xx, y, 0);
-				if (y >= q.CLL2 * factor_escala)
-					for (int xx = q.SPL + 1; xx <= q.SP; xx++)
-						hip.putPixel(xx, y, 0);
-				if (y >= q.CLU1 * factor_escala)
-					for (int xx = q.SP + 1; xx <= q.SPU; xx++)
-						hip.putPixel(xx, y, 0);
-				if (y >= q.CLU2 * factor_escala)
-					for (int xx = q.SPU + 1; xx <= q.LEVELS - 1; xx++)
-						hip.putPixel(xx, y, 0);
-*/
 			}
 			
-			if (x == q.SPL)
-				for (int y = 0; y < h_histogram; y++)
-					hip.putPixel(x, y, 0);
-			if (x == q.SP)
-				for (int y = 0; y < h_histogram; y++)
-					hip.putPixel(x, y, 0);
-			if (x == q.SPU)
-				for (int y = 0; y < h_histogram; y++)
-					hip.putPixel(x, y, 0);
+//			if (x == q.SPL)
+//				for (int y = 0; y < h_histogram_window; y++)
+//					h_ip.putPixel(x, y, 0);
+//			if (x == q.SP)
+//				for (int y = 0; y < h_histogram_window; y++)
+//					h_ip.putPixel(x, y, 0);
+//			if (x == q.SPU)
+//				for (int y = 0; y < h_histogram_window; y++)
+//					h_ip.putPixel(x, y, 0);
+			
 		}
 		
-		ImagePlus him = new ImagePlus("Histograma de " + imTitle, hip);
-		him.show();
+		ImagePlus h_im = new ImagePlus("Histogram of " + imTitle, h_ip);
+		h_im.show();
 		
-		ImageProcessor hip_e = new ByteProcessor(w_histogram, h_histogram);
-		hip_e.setValue(255);
-		hip_e.fill();
-
-		int [] histo_eq = new int[q.LEVELS];
-		histo_eq = q.getHE(q.histo, q.m_histo, q.n_histo); 
+		// show the cumulative histogram
 		
-		for (int x = 0; x < w_histogram; ++x) {
-
-			for (int y = 0; y < histo_eq[x] * factor_escala; ++y) {
+//		float scale_factor_ch = (float)(h_histogram_window) / (float)(q.getMaxCHistogram());
+//		
+//		ImageProcessor ch_ip = new ByteProcessor(w_histogram_window, h_histogram_window);
+//		ch_ip.setValue(255);
+//		ch_ip.fill();
+//		
+//		for (int x = 0; x < w_histogram_window; ++x)
+//			for (int y = 0; y < (int)((float)(q.chistogram[x]) * scale_factor_ch); ++y)
+//				ch_ip.putPixel(x, h_histogram_window - y, 0);
+//
+//		ImagePlus ch_im = new ImagePlus("Cumulative Histogram of " + imTitle, ch_ip);
+//		ch_im.show();
 				
-				hip_e.putPixel(x, h_histogram - y, 0);
-				
-			}
-		}
+		// show the sqrt cumulative histogram
 		
-		ImagePlus he = new ImagePlus("HE de " + imTitle, hip_e);
-		he.show();
+//		float scale_factor_chsqrt = (float)(h_histogram_window) / q.max_sqrt_cH;
+//		
+//		ImageProcessor ch_ipsqrt = new ByteProcessor(w_histogram_window, h_histogram_window);
+//		ch_ipsqrt.setValue(255);
+//		ch_ipsqrt.fill();
+//		
+//		for (int x = 0; x < w_histogram_window; ++x)
+//			for (int y = 0; y < (int)(q.sqrt_cH[x] * scale_factor_chsqrt); ++y)
+//				ch_ipsqrt.putPixel(x, h_histogram_window - y, 0);
+//
+//		ImagePlus ch_imsqrt = new ImagePlus("SQRT Cumulative Histogram of " + imTitle, ch_ipsqrt);
+//		ch_imsqrt.show();
 		
-		// muestra el histograma acumulativo
-		
-		ImageProcessor hip_ac = new ByteProcessor(w_histogram, h_histogram);
-		hip_ac.setValue(255);
-		hip_ac.fill();
-		
-		for (int x = 0; x < w_histogram; ++x)
-			for (int y = 0; y < histogram_ac[x] * h_histogram / max_histogram_ac; ++y)
-				hip_ac.putPixel(x, h_histogram - y, 0);
-
-		ImagePlus him_ac = new ImagePlus("Histograma ac. de " + imTitle, hip_ac);
-		him_ac.show();
 	}
 
 }
